@@ -1,0 +1,100 @@
+﻿@model IEnumerable<RentalApplicationListViewModel>
+
+@{
+    ViewData["Title"] = "My Applications";
+}
+
+<h2>My Applications</h2>
+
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div id="saveSuccessMessage" class="alert alert-success">@message</div>
+}
+
+<p>
+    <a asp-controller="ApplicantUnits" asp-action="Index" class="btn btn-primary">
+        Browse Units
+    </a>
+</p>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        You haven't started any rental applications yet.
+    </div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Application No.</th>
+                <th>Property</th>
+                <th>Unit</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Submitted</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var application in Model)
+            {
+                <tr>
+                    <td>@application.Id</td>
+                    <td>@application.PropertyName</td>
+                    <td>@application.UnitNumber</td>
+                    <td>@application.Status</td>
+                    <td>
+                        <time data-utc-datetime="@application.CreatedAtUtc.ToString("O")">
+                            @application.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC
+                        </time>
+                    </td>
+                    <td>
+                        @if (application.SubmittedAtUtc.HasValue)
+                        {
+                            <time data-utc-datetime="@application.SubmittedAtUtc.Value.ToString("O")">
+                                @application.SubmittedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC
+                            </time>
+                        }
+                        else
+                        {
+                            @:—
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Details"
+                        asp-route-id="@application.Id"
+                        class="btn btn-sm btn-primary">
+                            View
+                        </a>
+
+                        @if (application.CanEdit)
+                        {
+                            <a asp-action="Edit"
+                            asp-route-id="@application.Id"
+                            class="btn btn-sm btn-secondary">
+                                Edit
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            //Only display success message for so long - 5 sec is enough
+            const successMessage = $("#saveSuccessMessage");
+            if (successMessage.length) {
+
+                setTimeout(function () {
+                    successMessage.fadeOut(300);
+                }, 5000);
+            }
+        });
+    </script>
+}

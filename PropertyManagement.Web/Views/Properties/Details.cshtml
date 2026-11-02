@@ -1,0 +1,17 @@
+﻿@model PropertyViewModel
+
+@{
+    ViewData["Title"] = "Property Details";
+}
+
+<h2>@Model.Name</h2>
+<dl class="row">
+    <dt class="col-sm-3">Address</dt>
+    <dd class="col-sm-9">@Model.Address</dd>
+
+    <dt class="col-sm-3">Number of Units</dt>
+    <dd class="col-sm-9">@Model.UnitCount</dd>
+</dl>
+
+<a asp-action="Edit" asp-route-id="@Model.Id"class="btn btn-primary">Edit</a>
+<a asp-action="Index" class="btn btn-secondary">Back to Properties</a>

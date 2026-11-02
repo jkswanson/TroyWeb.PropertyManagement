@@ -1,0 +1,54 @@
+﻿@model RentalApplicationWizardViewModel
+
+<h4>Residence History</h4>
+
+@if (Model.CanEdit)
+{
+    <p class="text-muted">
+        Add your current and previous residences.
+    </p>
+
+    <button type="button"
+            id="addResidenceButton"
+            class="btn btn-primary mb-3">
+        Add Residence
+    </button>
+}
+
+<div id="residenceHistoryContainer">
+    @if (Model.CanEdit)
+    {
+        <partial name="~/Views/ResidenceHistories/_ResidenceHistoryList.cshtml"
+                 model="Model.Residences" />
+    }
+    else if (Model.Residences.Count == 0)
+    {
+        <p class="text-muted">No residence history entries.</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Address</th>
+                    <th>Move In</th>
+                    <th>Move Out</th>
+                    <th>Landlord</th>
+                    <th>Phone</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var residence in Model.Residences)
+                {
+                    <tr>
+                        <td>@residence.Address</td>
+                        <td>@residence.MoveInDate?.ToString("d")</td>
+                        <td>@residence.MoveOutDate?.ToString("d")</td>
+                        <td>@residence.LandlordName</td>
+                        <td>@residence.LandlordPhone</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

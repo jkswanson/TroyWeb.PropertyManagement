@@ -1,0 +1,42 @@
+﻿@model IEnumerable<PropertyManagement.Core.Entities.RentalApplicationStatusHistory>
+
+<h4>Application Review History</h4>
+
+@if (Model.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Previous Status</th>
+                <th>New Status</th>
+                <th>Reviewer</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var history in Model)
+            {
+                <tr>
+                    <td>
+                        <time data-utc-datetime="@history.CreatedAtUtc.ToString("O")">
+                            @history.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC
+                        </time>
+                    </td>
+                    <td>@history.PreviousStatus</td>
+                    <td>@history.NewStatus</td>
+                    <td>@history.ReviewerUserId</td>
+                    <td>
+                        @(string.IsNullOrWhiteSpace(history.Comments)
+                            ? "—"
+                            : history.Comments)
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No review history recorded.</p>
+}

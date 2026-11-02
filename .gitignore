@@ -1,0 +1,19 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build output
+**/bin/
+**/obj/
+
+# Test output
+TestResults/
+**/TestResults/
+
+# Local environment
+.env
+.env.*
+
+# Logs
+*.log

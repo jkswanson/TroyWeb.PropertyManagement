@@ -1,0 +1,46 @@
+﻿@model IEnumerable<UnitTypeViewModel>
+
+@{
+    ViewData["Title"] = "Unit Types";
+}
+
+<h2>Unit Types</h2>
+<p>
+    <a asp-action="Create" class="btn btn-primary">Add Unit Type</a>
+</p>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Units</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var unitType in Model)
+        {
+            <tr>
+                <td>@unitType.Name</td>
+                <td>
+                    @if (unitType.IsActive)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </td>
+                <td>@unitType.UnitCount</td>
+                <td>
+                    <a asp-action="Edit"
+                       asp-route-id="@unitType.Id"
+                       class="btn btn-sm btn-secondary">
+                        Edit
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

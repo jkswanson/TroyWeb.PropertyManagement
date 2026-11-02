@@ -1,0 +1,46 @@
+﻿@model IEnumerable<ResidenceHistoryViewModel>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No residence history has been added.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Address</th>
+                <th>Move In</th>
+                <th>Move Out</th>
+                <th>Landlord</th>
+                <th>Phone</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var residence in Model)
+            {
+                <tr>
+                    <td>@residence.Address</td>
+                    <td>@residence.MoveInDate?.ToString("MM/dd/yyyy")</td>
+                    <td>@(residence.MoveOutDate?.ToString("MM/dd/yyyy") ?? "Current")</td>
+                    <td>@residence.LandlordName</td>
+                    <td>@residence.LandlordPhone</td>
+                    <td>
+                        <button type="button"
+                                class="btn btn-sm btn-primary editResidenceButton"
+                                data-residence-id="@residence.Id">
+                            Edit
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-sm btn-danger deleteResidenceButton"
+                                data-residence-id="@residence.Id">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

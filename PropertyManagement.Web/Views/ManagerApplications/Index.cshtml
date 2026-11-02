@@ -1,0 +1,81 @@
+﻿@model ManagerApplicationIndexViewModel
+@using PropertyManagement.Core.Enums
+
+@{
+    ViewData["Title"] = "Manage Rental Applications";
+}
+
+<h2>Manage Rental Applications</h2>
+
+<form asp-action="Index" method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status"
+                asp-items="Html.GetEnumSelectList<RentalApplicationStatus>()"
+                class="form-select">
+            <option value="">All Statuses</option>
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="PropertyId" class="form-label">Property</label>
+        <select asp-for="PropertyId"
+                asp-items="Model.Properties"
+                class="form-select">
+            <option value="">All Properties</option>
+        </select>
+    </div>
+
+    <div class="col-md-4 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a asp-action="Index" class="btn btn-secondary">Clear</a>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Application</th>
+            <th>Applicant</th>
+            <th>Property</th>
+            <th>Unit</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var application in Model.Applications)
+        {
+            <tr>
+                <td>@application.Id</td>
+                <td>@application.ApplicantName</td>
+                <td>@application.PropertyName</td>
+                <td>@application.UnitNumber</td>
+                <td>@application.Status</td>
+                <td>
+                    @if (application.SubmittedAtUtc.HasValue)
+                    {
+                        <time data-utc-datetime="@application.SubmittedAtUtc.Value.ToString("O")">
+                            @application.SubmittedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC
+                        </time>
+                    }
+                    else
+                    {
+                        @:—
+                    }
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@application.Id" class="btn btn-sm btn-primary">
+                        View
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!Model.Applications.Any())
+{
+    <p>No rental applications match the selected filters.</p>
+}

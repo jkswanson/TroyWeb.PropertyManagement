@@ -1,0 +1,31 @@
+﻿@model AvailableUnitViewModel
+
+@{
+    ViewData["Title"] = "Unit Details";
+}
+
+<h2>@Model.PropertyName — Unit @Model.UnitNumber</h2>
+<dl class="row">
+    <dt class="col-sm-3">Address</dt>
+    <dd class="col-sm-9">@Model.PropertyAddress</dd>
+
+    <dt class="col-sm-3">Unit Type</dt>
+    <dd class="col-sm-9">@Model.UnitTypeName</dd>
+
+    <dt class="col-sm-3">Bedrooms</dt>
+    <dd class="col-sm-9">@Model.Bedrooms</dd>
+
+    <dt class="col-sm-3">Monthly Rent</dt>
+    <dd class="col-sm-9">@Model.MonthlyRent.ToString("C")</dd>
+</dl>
+
+<div class="d-flex gap-2">
+    @if (User.IsInRole("Applicant"))
+    {
+        <form asp-controller="RentalApplications" asp-action="Create" method="post">
+            <input type="hidden" name="unitId" value="@Model.Id" />
+            <button type="submit" class="btn btn-primary">Apply for This Unit</button>
+        </form>
+    }
+    <a asp-action="Index" class="btn btn-secondary">Back to Browse Units</a>
+</div>

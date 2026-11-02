@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="PropertyManagement.Core/PropertyManagement.Core.csproj" />
+  <Project Path="PropertyManagement.Infrastructure/PropertyManagement.Infrastructure.csproj" />
+  <Project Path="PropertyManagement.Tests/PropertyManagement.Tests.csproj" />
+  <Project Path="PropertyManagement.Web/PropertyManagement.Web.csproj" />
+</Solution>

@@ -1,0 +1,245 @@
+﻿@model ManagerApplicationDetailsViewModel
+
+@{
+    ViewData["Title"] = "Application Details";
+}
+
+<h2>Application #@Model.Id</h2>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success">
+        @successMessage
+    </div>
+}
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger">
+        @errorMessage
+    </div>
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-secondary">
+        Back to Applications
+    </a>
+</div>
+
+<h4>Application Information</h4>
+<dl class="row">
+    <dt class="col-sm-3">Property</dt>
+    <dd class="col-sm-9">@Model.PropertyName</dd>
+
+    <dt class="col-sm-3">Unit</dt>
+    <dd class="col-sm-9">@Model.UnitNumber</dd>
+
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">@Model.Status</dd>
+
+    <dt class="col-sm-3">Created</dt>
+    <dd class="col-sm-9">
+        <time data-utc-datetime="@Model.CreatedAtUtc.ToString("O")">
+            @Model.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC
+        </time>
+    </dd>
+
+    <dt class="col-sm-3">Submitted</dt>
+    <dd class="col-sm-9">
+        @if (Model.SubmittedAtUtc.HasValue)
+        {
+            <time data-utc-datetime="@Model.SubmittedAtUtc.Value.ToString("O")">
+                @Model.SubmittedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC
+            </time>
+        }
+        else
+        {
+            @:Not submitted
+        }
+    </dd>
+</dl>
+
+<hr />
+
+<h4>Applicant Information</h4>
+
+<dl class="row">
+    <dt class="col-sm-3">First Name</dt>
+    <dd class="col-sm-9">@Model.Application.FirstName</dd>
+
+    <dt class="col-sm-3">Last Name</dt>
+    <dd class="col-sm-9">@Model.Application.LastName</dd>
+
+    <dt class="col-sm-3">Email</dt>
+    <dd class="col-sm-9">@Model.Application.Email</dd>
+
+    <dt class="col-sm-3">Phone</dt>
+    <dd class="col-sm-9">@Model.Application.PhoneNumber</dd>
+
+    <dt class="col-sm-3">Current Address</dt>
+    <dd class="col-sm-9">@Model.Application.CurrentAddress</dd>
+</dl>
+
+<hr />
+
+<h4>Residence History</h4>
+@if (Model.Application.Residences.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Address</th>
+                <th>Move In</th>
+                <th>Move Out</th>
+                <th>Landlord</th>
+                <th>Landlord Phone</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var residence in Model.Application.Residences)
+            {
+                <tr>
+                    <td>@residence.Address</td>
+                    <td>@(residence.MoveInDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                    <td>@(residence.MoveOutDate?.ToString("yyyy-MM-dd") ?? "Current")</td>
+                    <td>@residence.LandlordName</td>
+                    <td>@residence.LandlordPhone</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No residence history provided.</p>
+}
+
+<hr/>
+
+<!--Use required ViewComponent Here-->
+@await Component.InvokeAsync("ApplicationReviewHistory", new { applicationId = Model.Id })
+
+@if (Model.Status == RentalApplicationStatus.Submitted)
+{
+    <button type="button"
+            id="openReviewButton"
+            class="btn btn-primary mb-3"
+            data-application-id="@Model.Id">
+        Review Application
+    </button>
+
+    <div class="modal fade"
+         id="reviewModal"
+         tabindex="-1"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" id="reviewModalContent">
+                <!-- Review partial loaded here via AJAX -->
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        $(function () {
+            const reviewModalElement = document.getElementById("reviewModal");
+
+            if (!reviewModalElement) {
+                return;
+            }
+
+            const reviewModal = bootstrap.Modal.getOrCreateInstance(reviewModalElement);
+
+            function updateReviewRequirements() {
+                const decision = $("#reviewDecision").val();
+                const isApproval = decision === "Approved";
+                const requiresComments =
+                    decision === "Returned" || decision === "Denied";
+
+                $("#reviewComments").prop("required", requiresComments);
+
+                $("#leaseStartDateContainer").toggle(isApproval);
+                $("#leaseStartDate").prop("required", isApproval);
+            }
+
+            $("#openReviewButton").on("click", function () {
+                const applicationId = $(this).data("application-id");
+
+                $.get('@Url.Action("Review", "ManagerApplications")',
+                    { id: applicationId })
+                    .done(function (html) {
+                        $("#reviewModalContent").html(html);
+
+                        $.validator.unobtrusive.parse("#reviewForm");
+
+                        updateReviewRequirements();
+                        reviewModal.show();
+                    })
+                    .fail(function () {
+                        alert("Unable to load the review form.");
+                    });
+            });
+
+            $(document).on("change", "#reviewDecision", function () {
+                updateReviewRequirements();
+            });
+
+            $(document).on("submit", "#reviewForm", function (event) {
+                event.preventDefault();
+
+                const form = $(this);
+
+                if (!form.valid()) {
+                    return;
+                }
+
+                const submitButton = form.find('button[type="submit"]');
+                submitButton.prop("disabled", true);
+
+                $.ajax({
+                    url: form.attr("action"),
+                    type: "POST",
+                    data: form.serialize()
+                })
+                    .done(function (response) {
+                        if (response && response.success === true) {
+                            reviewModal.hide();
+                            window.location.reload();
+                            return;
+                        }
+
+                        $("#reviewModalContent").html(response);
+
+                        const updatedForm = $("#reviewForm");
+
+                        updatedForm.removeData("validator");
+                        updatedForm.removeData("unobtrusiveValidation");
+
+                        $.validator.unobtrusive.parse(updatedForm);
+
+                        updateReviewRequirements();
+                    })
+                    .fail(function (xhr) {
+                        const message = xhr.status === 409
+                            ? "This application can no longer be reviewed."
+                            : "Unable to submit the review. Please try again.";
+
+                        let errorContainer = $("#reviewAjaxError");
+
+                        if (!errorContainer.length) {
+                            errorContainer = $('<div id="reviewAjaxError" class="alert alert-danger"></div>');
+                            $("#reviewForm .modal-body").prepend(errorContainer);
+                        }
+
+                        errorContainer.text(message);
+                    })
+                    .always(function () {
+                        $("#reviewForm button[type='submit']").prop("disabled", false);
+                    });
+            });
+        });
+    </script>
+}

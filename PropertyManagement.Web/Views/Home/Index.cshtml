@@ -1,0 +1,92 @@
+﻿@using PropertyManagement.Core.Constants
+
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="bg-light rounded-3 p-4 p-md-5 mb-4 border">
+    <h1 class="display-5 fw-semibold">Property Management</h1>
+    <p class="lead text-muted mt-3">
+        Browse available rental properties, submit applications,
+        and manage the rental application review process.
+    </p>
+
+    @if (User.Identity?.IsAuthenticated != true)
+    {
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <a asp-controller="Account"
+               asp-action="Register"
+               class="btn btn-primary btn-lg">
+                Create an Account
+            </a>
+            <a asp-controller="Account"
+               asp-action="Login"
+               class="btn btn-primary btn-lg">
+                Sign In
+            </a>
+        </div>
+    }
+    else if (User.IsInRole(RoleNames.Applicant))
+    {
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <a asp-controller="ApplicantUnits"
+               asp-action="Index"
+               class="btn btn-primary btn-lg">
+                Browse Available Units
+            </a>
+            <a asp-controller="RentalApplications"
+               asp-action="Index"
+               class="btn btn-primary btn-lg">
+                My Applications
+            </a>
+        </div>
+    }
+    else if (User.IsInRole(RoleNames.PropertyManager))
+    {
+        <div class="mt-4">
+            <a asp-controller="ManagerApplications"
+               asp-action="Index"
+               class="btn btn-primary btn-lg">
+                Manage Applications
+            </a>
+        </div>
+    }
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Browse Properties</h5>
+                <p class="card-text text-muted">
+                    Explore rental units, property details,
+                    and monthly rental rates.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Apply Online</h5>
+                <p class="card-text text-muted">
+                    Complete rental applications, provide residence
+                    history, and track application status.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Manage Applications</h5>
+                <p class="card-text text-muted">
+                    Review submitted applications, record decisions,
+                    and manage approved leases.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

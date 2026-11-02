@@ -1,0 +1,78 @@
+﻿@model RentalApplicationWizardViewModel
+@using PropertyManagement.Core.Enums
+
+@{
+    ViewData["Title"] = "Application Details";
+
+    var status = (RentalApplicationStatus)ViewData["ApplicationStatus"]!;
+    var createdAtUtc = (DateTime)ViewData["CreatedAtUtc"]!;
+    var submittedAtUtc = (DateTime?)ViewData["SubmittedAtUtc"];
+    bool canEdit = status == RentalApplicationStatus.Draft ||
+                   status == RentalApplicationStatus.Returned;
+}
+
+<h2>Application Details</h2>
+<div class="mb-3">
+    <strong>Application #:</strong> @Model.Id
+    <br />
+    <strong>Status:</strong> @status
+    <br />
+    <strong>Created:</strong>
+    <time data-utc-datetime="@createdAtUtc.ToString("O")">
+        @createdAtUtc.ToString("yyyy-MM-dd HH:mm") UTC
+    </time>
+
+    @if (submittedAtUtc.HasValue)
+    {
+        <div>
+            <strong>Submitted:</strong>
+            <time data-utc-datetime="@submittedAtUtc.Value.ToString("O")">
+                @submittedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC
+            </time>
+        </div>
+    }
+</div>
+
+<hr />
+
+<h4>Property and Unit</h4>
+
+<dl class="row">
+    <dt class="col-sm-3">Property</dt>
+    <dd class="col-sm-9">@Model.PropertyName</dd>
+
+    <dt class="col-sm-3">Unit</dt>
+    <dd class="col-sm-9">@Model.UnitNumber</dd>
+</dl>
+
+<hr />
+
+<partial name="_ApplicantInfo" model="Model" />
+
+<hr />
+
+<partial name="_ResidenceHistory" model="Model" />
+
+<div class="d-flex gap-2 mt-4">
+
+    <a asp-action="Index" class="btn btn-primary">My Applications</a>
+    @if (canEdit)
+    {
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-secondary">Edit Application</a>
+    }
+
+    @if (status == RentalApplicationStatus.Draft ||
+         status == RentalApplicationStatus.Returned ||
+         status == RentalApplicationStatus.Submitted)
+    {
+        <form asp-controller="RentalApplications"
+              asp-action="Withdraw"
+              asp-route-id="@Model.Id"
+              method="post"
+              onsubmit="return confirm('Are you sure you want to withdraw this application?');">
+
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-danger">Withdraw Application</button>
+        </form>
+    }
+</div>

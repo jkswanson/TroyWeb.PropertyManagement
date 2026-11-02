@@ -1,0 +1,78 @@
+﻿@model ManagerApplicationReviewViewModel
+
+<div class="modal-header">
+    <h5 class="modal-title">
+        Review Application #@Model.ApplicationId
+    </h5>
+    <button type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"></button>
+</div>
+
+<form id="reviewForm"
+      asp-controller="ManagerApplications"
+      asp-action="Review"
+      method="post">
+
+    @Html.AntiForgeryToken()
+
+    <input asp-for="ApplicationId" type="hidden" />
+
+    <div class="modal-body">
+
+        <div asp-validation-summary="ModelOnly"
+             class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="Decision" class="form-label"></label>
+            <select asp-for="Decision"
+                    id="reviewDecision"
+                    class="form-select">
+                <option value="">Select a decision</option>
+                <option value="Approved">Approve</option>
+                <option value="Returned">Return</option>
+                <option value="Denied">Deny</option>
+            </select>
+            <span asp-validation-for="Decision" class="text-danger"></span>
+        </div>
+
+        <div id="leaseStartDateContainer"
+             class="mb-3"
+             style="display:none;">
+            <label asp-for="LeaseStartDate" class="form-label">
+                Lease Start Date
+            </label>
+            <input asp-for="LeaseStartDate"
+                   id="leaseStartDate"
+                   type="date"
+                   class="form-control"
+                   min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+            <span asp-validation-for="LeaseStartDate" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Comments" class="form-label"></label>
+            <textarea asp-for="Comments"
+                      id="reviewComments"
+                      class="form-control"
+                      rows="4"
+                      maxlength="2000"></textarea>
+            <span asp-validation-for="Comments" class="text-danger"></span>
+            <div class="form-text">
+                Comments are required for Return and Deny.
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal">
+            Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">
+            Submit Review
+        </button>
+    </div>
+</form>

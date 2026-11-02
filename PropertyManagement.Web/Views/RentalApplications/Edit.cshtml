@@ -1,0 +1,425 @@
+﻿@model RentalApplicationWizardViewModel
+
+@{
+    ViewData["Title"] = "Rental Application";
+}
+
+<h2>Rental Application</h2>
+
+<p class="text-muted">
+    @Model.PropertyName — Unit @Model.UnitNumber
+</p>
+
+<!-- Display success  -->
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div id="saveSuccessMessage"
+         class="alert alert-success">
+        @message
+    </div>
+}
+
+<!-- Display serverside errors if they exist -->
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+<div class="mb-4">
+    <span id="stepIndicator1" class="badge bg-primary">
+        1. Applicant Info
+    </span>
+
+    <span id="stepIndicator2" class="badge bg-secondary">
+        2. Residence History
+    </span>
+
+    <span id="stepIndicator3" class="badge bg-secondary">
+        3. Summary
+    </span>
+</div>
+
+<form id="applicationForm" asp-action="Edit" asp-route-id="@Model.Id" method="post">
+
+    <input asp-for="Id" type="hidden" />
+    <input type="hidden" id="currentWizardStep" name="currentWizardStep" value="1" />
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    
+    <!-- STEP 1: APPLICANT INFO -->
+    <section id="step1">
+        <partial name="_ApplicantInfo" model="Model" />
+    </section>
+
+    <!-- STEP 2: RESIDENCE HISTORY -->
+    <section id="step2" class="d-none">
+        <partial name="_ResidenceHistory" model="Model" />
+        <div id="residenceSectionError"
+             class="alert alert-danger d-none mt-3"
+             role="alert"></div>
+    </section>
+
+    <!-- STEP 3: SUMMARY -->
+    <section id="step3" class="d-none">
+        <h4>Application Summary</h4>
+
+        <p><strong>Property:</strong> @Model.PropertyName</p>
+        <p><strong>Unit:</strong> @Model.UnitNumber</p>
+
+        <p>
+            <strong>Name:</strong>
+            <span id="summaryName"></span>
+        </p>
+
+        <p>
+            <strong>Email:</strong>
+            <span id="summaryEmail"></span>
+        </p>
+
+        <p>
+            <strong>Phone:</strong>
+            <span id="summaryPhone"></span>
+        </p>
+
+        <p>
+            <strong>Current Address:</strong>
+            <span id="summaryCurrentAddress"></span>
+        </p>
+
+        <h5 class="mt-4">Residence History</h5>
+        <div id="summaryResidenceHistoryContainer">
+            <p class="text-muted">Residence history will appear here.</p>
+        </div>
+    </section>
+
+    <!-- NAVIGATION -->
+    <div class="d-flex gap-2 mt-4">
+
+        <!-- UI Only -->
+        <button type="button" id="backButton" class="btn btn-secondary d-none">Back</button>
+        <button type="button" id="nextButton" class="btn btn-primary">Continue</button>
+
+        <!-- Submit draft to server -->
+        <button type="submit"
+                name="actionType"
+                value="SaveDraft"
+                class="btn btn-primary">
+            Save Draft
+        </button>
+
+        <!-- Submit application -->
+        <button type="submit"
+                id="submitApplicationButton"
+                name="actionType"
+                value="Submit"
+                class="btn btn-success d-none"
+                onclick="return confirm('Submit this application? You will not be able to edit it afterward.');">
+            Submit Application
+        </button>
+        <a asp-action="Index"
+           asp-controller="RentalApplications"
+           class="btn btn-primary">
+            My Applications
+        </a>
+    </div>
+</form>
+
+<div class="modal fade" id="residenceModal"tabindex="-1"aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content"id="residenceModalContent">
+            <!--AJAX Rental History Partial View Here
+                Must be outside main form -> Can't nest forms'
+            -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <!--Wizard UI - Client Side Scripting-->
+
+    <script>
+        $(function () {
+
+            // ============================================================
+            // Configuration & Shared State
+            // ============================================================
+
+            let currentStep = 1;
+
+            const form = $("#applicationForm");
+            const applicationId = @Model.Id;
+
+            const residenceUrls = {
+                create: '@Url.Action("Create", "ResidenceHistories")',
+                edit: '@Url.Action("Edit", "ResidenceHistories")',
+                delete: '@Url.Action("Delete", "ResidenceHistories")',
+                list: '@Url.Action("List", "ResidenceHistories")',
+                validate: '@Url.Action("ValidateSection", "ResidenceHistories")'
+            };
+
+            const residenceModalElement = document.getElementById("residenceModal");
+            const residenceModal = bootstrap.Modal.getOrCreateInstance(residenceModalElement);
+
+            // ============================================================
+            // Wizard UI Navigation Scripts
+            // ============================================================
+
+            function showStep(step) {
+                currentStep = step;
+                $("#currentWizardStep").val(step);
+
+                for (let i = 1; i <= 3; i++) {
+                    $("#step" + i).toggleClass("d-none", i !== step);
+                    $("#stepIndicator" + i)
+                        .toggleClass("bg-primary", i === step)
+                        .toggleClass("bg-secondary", i !== step);
+                }
+
+                $("#backButton").toggleClass("d-none", step === 1);
+                $("#nextButton").toggleClass("d-none", step === 3);
+                $("#submitApplicationButton").toggleClass("d-none", step !== 3);
+
+                if (step === 3) {
+                    updateSummary();
+                    refreshSummaryResidenceHistory();
+                }
+            }
+
+            function validateApplicantInfo() {
+                const validator = form.data("validator");
+
+                if (!validator) {
+                    return false;
+                }
+
+                const fields = [
+                    "FirstName",
+                    "LastName",
+                    "Email",
+                    "PhoneNumber",
+                    "CurrentAddress"
+                ];
+
+                let isValid = true;
+
+                fields.forEach(function (field) {
+                    if (!validator.element(document.getElementById(field))) {
+                        isValid = false;
+                    }
+                });
+
+                return isValid;
+            }
+
+            function updateSummary() {
+                const firstName = $("#FirstName").val();
+                const lastName = $("#LastName").val();
+
+                $("#summaryName").text(firstName + " " + lastName);
+                $("#summaryEmail").text($("#Email").val());
+                $("#summaryPhone").text($("#PhoneNumber").val());
+                $("#summaryCurrentAddress").text($("#CurrentAddress").val());
+            }
+
+            // ============================================================
+            // Residence History Modal & AJAX Scripts
+            // ============================================================
+
+            function loadResidenceModal(url, data, errorMessage) {
+                $.get(url, data)
+                    .done(function (html) {
+                        $("#residenceModalContent").html(html);
+                        $.validator.unobtrusive.parse("#residenceForm");
+                        residenceModal.show();
+                    })
+                    .fail(function () {
+                        alert(errorMessage);
+                    });
+            }
+
+            function refreshResidenceHistory() {
+                return $.get(
+                            residenceUrls.list,
+                            { rentalApplicationId: applicationId })
+                        .done(function (html) {
+                            $("#residenceHistoryContainer").html(html);
+                        }).fail(function () {
+                            alert("Unable to refresh residence history.");
+                        });
+            }
+
+            function refreshSummaryResidenceHistory() {
+                return $.get(
+                            residenceUrls.list,
+                            { rentalApplicationId: applicationId })
+                        .done(function (html) {
+                            const summary = $("<div>").html(html);
+
+                            //Remove editing controls from the Summary.
+                            summary.find("th:last-child").remove();
+                            summary.find("td:last-child").remove();
+
+                            $("#summaryResidenceHistoryContainer").html(summary.html());
+                        }).fail(function () {
+                            $("#summaryResidenceHistoryContainer").html(
+                            '<p class="text-danger">Unable to load residence history.</p>');
+                        });
+            }
+
+            // ============================================================
+            // Wizard Navigation Event Handlers
+            // ============================================================
+
+            $("#nextButton").on("click", function () {
+                $("#saveSuccessMessage").hide();
+
+                if (currentStep === 1) {
+                    if (!validateApplicantInfo()) {
+                        return;
+                    }
+
+                    // Save Applicant Info before advancing to Residence History.
+                    $("#currentWizardStep").val(2);
+
+                    const saveDraftButton =
+                        form.find('button[name="actionType"][value="SaveDraft"]')[0];
+
+                    form[0].requestSubmit(saveDraftButton);
+                    return;
+                }
+
+                if (currentStep === 2) {
+                    $.get(residenceUrls.validate, {
+                        rentalApplicationId: applicationId
+                    })
+                        .done(function (response) {
+                            if (response.isValid === true) {
+                                $("#residenceSectionError").addClass("d-none").text("");
+                                showStep(3);
+                            } else {
+                                $("#residenceSectionError")
+                                    .removeClass("d-none")
+                                    .text(response.error || "Residence history is required.");
+                            }
+                        })
+                        .fail(function () {
+                            $("#residenceSectionError")
+                                .removeClass("d-none")
+                                .text("Unable to validate residence history. Please try again.");
+                        });
+
+                    return;
+                }
+            });
+
+            $("#backButton").on("click", function () {
+                if (currentStep > 1) {
+                    showStep(currentStep - 1);
+                }
+
+                $("#saveSuccessMessage").hide(); //hide success MessageChannel on navigation
+            });
+
+            // ============================================================
+            // Residence History Event Handlers
+            // ============================================================
+
+            $("#addResidenceButton").on("click", function () {
+                loadResidenceModal(
+                    residenceUrls.create,
+                    { rentalApplicationId: applicationId },
+                    "Unable to load the residence form."
+                );
+            });
+
+            $(document).on("click", ".editResidenceButton", function () {
+                const residenceId = $(this).data("residence-id");
+                loadResidenceModal(
+                    residenceUrls.edit,
+                    { id: residenceId },
+                    "Unable to load the residence for editing."
+                );
+            });
+
+            $(document).on("submit", "#residenceForm", function (event) {
+                event.preventDefault();
+                const modalForm = $(this);
+
+                if (!modalForm.valid()) {
+                    return;
+                }
+
+                $.ajax({
+                    url: modalForm.attr("action"),
+                    type: "POST",
+                    data: modalForm.serialize()
+                }).done(function (response) {
+                    if (response && response.success === true) {
+                        residenceModal.hide();
+                        refreshResidenceHistory();
+                    } else {
+                        $("#residenceModalContent").html(response);
+                        if ($("#residenceForm").length) {
+                            $.validator.unobtrusive.parse("#residenceForm");
+                        }
+                    }
+                }).fail(function () {
+                    alert("Unable to save the residence.");
+                });
+            });
+
+            $(document).on("click", ".deleteResidenceButton", function () {
+                const residenceId = $(this).data("residence-id");
+
+                loadResidenceModal(
+                    residenceUrls.delete,
+                    { id: residenceId },
+                    "Unable to load the residence deletion confirmation."
+                );
+            });
+
+            $(document).on("submit", "#deleteResidenceForm", function (event) {
+                event.preventDefault();
+
+                const modalForm = $(this);
+
+                $.ajax({
+                    url: modalForm.attr("action"),
+                    type: "POST",
+                    data: modalForm.serialize()
+                }).done(function (response) {
+                    if (response && response.success === true) {
+                        residenceModal.hide();
+                        refreshResidenceHistory();
+                    } else {
+                        alert("Unable to delete the residence.");
+                    }
+                }).fail(function () {
+                    alert("Unable to delete the residence.");
+                });
+            });
+
+
+            // ============================================================
+            // Initialization
+            // ============================================================
+
+            //Ensure when we save changes wizard reloads to the same wizard step it was already on
+            const initialStep = @Math.Clamp(
+                Convert.ToInt32(ViewData["WizardStep"] ?? TempData["WizardStep"] ?? 1), 1, 3);
+
+            showStep(initialStep);
+
+            //Only display success message for so long - 5 sec is enough
+            const successMessage = $("#saveSuccessMessage");
+            if (successMessage.length) {
+                setTimeout(function () {
+                    successMessage.fadeOut(300);
+                }, 5000);
+            }
+        });
+    </script>
+
+}
