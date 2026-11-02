@@ -54,7 +54,7 @@ The application automatically seeds the following accounts on first startup:
 | Applicant | applicant2@example.com | Test1234! |
 | Applicant (Sample Data) | demo.applicant01@example.com | Test1234! |
 
-Ten additional sample applicant accounts are created, numbered
+Ten total demo applicant accounts are created, numbered
 `demo.applicant01@example.com` through `demo.applicant10@example.com`.
 
 All demo accounts have confirmed email addresses and can sign in immediately.
